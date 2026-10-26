@@ -51,6 +51,18 @@ or is revoked. Guard the master secret like a password and
 rotate it on suspicion — if it leaks, every derived key
 falls with it.
 
+## Verify the patch
+
+After updating PHP and restarting every worker, prove it landed:
+
+```
+python3 php-patch-check.py
+```
+
+Exit 0 = no failed checks, 1 = something still unpatched,
+2 = php binary missing or unreadable. WARN never fails the
+run. It changes nothing — it only reads `php -v` and `php -i`.
+
 ## Proof (test run, this machine)
 
 - 8 attack classes blocked (no key, direct bypass, tampered
@@ -67,6 +79,9 @@ falls with it.
 - `gateway.py` — the cage as a deployable HTTP gateway that
   actually proxies to PHP (standard library only).
 - `PATCH-GUIDE.md` — the vendor patch procedure for PHP2Shell.
+- `php-patch-check.py` — verifies a PHP install against the
+  PHP2Shell fixes (version, upload-progress, banner, errors,
+  memory limit); run it on the server after updating.
 
 ## License
 
