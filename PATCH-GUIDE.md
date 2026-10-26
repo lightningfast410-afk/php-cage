@@ -3,8 +3,9 @@
 The cage (php-cage-v3.py) guards PHP. It does not patch it. This
 guide is the patch itself: the vendor fix for the October 2026
 PHP2Shell flaws, CVE-2026-109618 and CVE-2026-109619 (CVSS 9.2,
-unauthenticated remote code execution, exploited in the wild
-since October 21, 2026).
+unauthenticated remote code execution; exploitation attempts
+observed from October 17, 2026, patches released October 21,
+2026, 14:00 UTC).
 
 ## The fixed versions (released October 21, 2026)
 
@@ -22,7 +23,11 @@ since October 21, 2026).
    shared-hosting account stays vulnerable.
 2. **Update.** Via the OS package manager, the host's panel,
    or by rebuilding Docker images on the fixed official PHP
-   images. Patch mod_php hosts FIRST — PHP rates mod_php the
+   images. Vendor channels already carry fixed packages:
+   cPanel EasyApache4, CloudLinux alt-php/ea-php, TuxCare ELS,
+   and Ubuntu vendor builds; Heroku's rebuilt 8.1.34 is a
+   backport, not a supported release — upgrade to a supported
+   branch. Patch mod_php hosts FIRST — PHP rates mod_php the
    highest-risk setup, because an attack lands before your
    application code even runs. PHP-FPM is still affected and
    still needs the update.
@@ -46,6 +51,23 @@ since October 21, 2026).
 ## If you cannot update immediately (mitigations, NOT a fix)
 
 - Disable session upload progress: `session.upload_progress.enabled=0`
+- For the out-of-memory path (CVE-2026-109618): enforce
+  `memory_limit=-1` administratively (FPM pool or Apache
+  configuration the application cannot override), restart every
+  worker, and verify no pool, directory, or application setting
+  restores a finite limit. Pair it with a container or cgroup
+  memory limit that kills only the affected worker, since
+  removing PHP's cap lets a heavy script use all server RAM.
+  This addresses the confirmed OOM path only.
+- If you cannot update and run PHP 8.1 or older: take the
+  system offline until it is patched (CISA advice), and
+  monitor PHP worker processes for shells being launched or
+  tools being downloaded.
+- Note: WAF pattern rules can be evaded by lookalike uploads,
+  and no WAF rule yet blocks the OOM path. The cage's key
+  gating is not pattern-based (no valid key means no entry
+  whatever the payload looks like), but it still does not fix
+  the underlying flaw.
 - Cap `post_max_size`; on PHP 8.5, disable `fatal_error_backtraces`.
 - Keep a web firewall on (ModSecurity + OWASP Core Rule Set,
   or managed CDN rules). Remove unused PHP versions, plugins,
